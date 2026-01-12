@@ -1,0 +1,118 @@
+/* Import the base, components, and utilities from Tailwind v4 */
+@import "tailwindcss";
+
+/* Define our entire custom theme using v4's @theme directive.
+  These CSS variables will automatically generate the utility classes
+  (e.g., --color-primary creates `bg-primary`, `text-primary`, etc.)
+*/
+@theme {
+  /* Brand/Accent Color (from Smart CV logo) */
+  --color-primary: #3B82F6;
+  --color-primary-foreground: #FFFFFF;
+
+  /* Backgrounds */
+  --color-background: #F9FAFB;
+  --color-background-card: #FFFFFF;
+  --color-background-light: #F3F4F6;
+
+  /* Text Colors */
+  --color-foreground: #1F2937;
+  --color-foreground-secondary: #4B5563;
+  --color-foreground-muted: #6B7280;
+
+  /* Borders and Dividers */
+  --color-border: #E5E7EB;
+  
+  /* Special UI colors (for light gray buttons) */
+  --color-input: #D1D5DB;
+  --color-ui-button-bg: #E5E7EB;
+  --color-ui-button-text: #1F2937;
+
+  /* Border Radius (creates rounded-lg, rounded-md, etc.) */
+  --radius-lg: 0.5rem;
+  --radius-md: calc(0.5rem - 2px);
+  --radius-sm: 0.375rem;
+
+  /* Define variables needed for the Button component.
+    This creates `ring-ring` and `ring-offset-background`
+  */
+  --color-ring: var(--color-primary);
+  --color-background-offset: var(--color-background);
+}
+
+/* Apply our new base styles (defined in @theme) to the body.
+*/
+@layer base {
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/* --- Add these new utilities for the accordion --- */
+@layer utilities {
+  @keyframes accordion-down {
+    from {
+      height: 0px; /* Use 0px instead of 0 */
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0px; /* Use 0px instead of 0 */
+    }
+  }
+
+  .animate-accordion-down {
+    animation: accordion-down 0.2s ease-out;
+  }
+  .animate-accordion-up {
+    animation: accordion-up 0.2s ease-out;
+  }
+}
+
+/* --- RESUME BUILDER STYLES --- */
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  html, body {
+    width: 210mm;
+    height: 297mm;
+  }
+  /* Hide header/footer when printing the resume */
+  header, footer, .no-print {
+    display: none !important;
+  }
+  body {
+    margin: 0;
+    padding: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: white;
+  }
+}
+
+/* Traditional Template Theme */
+.trad-theme {
+  --trad-primary-color: #f97316; 
+  --trad-text-light: #ffffff;
+  --trad-text-dark: #1f2937;
+  --trad-text-subtle: #4b5563;
+  --trad-bg-light: #ffffff;
+  --trad-dot-empty: #e5e7eb;
+}
+
+.trad-container {
+  @apply mx-auto w-full bg-white shadow-lg;
+  max-width: 1024px;
+  color: var(--trad-text-dark);
+  font-family: Arial, Helvetica, sans-serif;
+}
