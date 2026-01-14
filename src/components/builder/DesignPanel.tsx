@@ -2,25 +2,21 @@
 
 import { useCallback, useState, useEffect } from 'react';
 import Image from "next/image";
-import { useClientResumeStore } from "@/hooks/useClientResumeStore";
-import { shallow } from "zustand/shallow";
-import { Template } from "@/types/templates";
+import { useClientResumeStore, useResumeActions } from "@/hooks/useClientResumeStore";
+import { Template } from "@/types/template";
 import TemplateCard from "./TemplateCard";
 import { Settings, Maximize, Type, Palette as PaletteIcon, FileText } from "lucide-react";
 
-interface DesignPanelProps {
-  selectedTemplate: string;
-  onTemplateSelect: (templateId: string) => void;
-}
-
-export default function DesignPanel({ selectedTemplate, onTemplateSelect }: DesignPanelProps) {
-  const { templates, exportSettings, updateExportSettings } = useClientResumeStore(
+export default function DesignPanel() {
+  const { templates, selectedTemplate, exportSettings } = useClientResumeStore(
     useCallback((state) => ({ 
       templates: state.templates,
+      selectedTemplate: state.selectedTemplate,
       exportSettings: state.exportSettings,
-      updateExportSettings: state.updateExportSettings
-    }), []), shallow
+    }), [])
   );
+
+  const { updateExportSettings, setSelectedTemplate } = useResumeActions();
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -50,7 +46,7 @@ export default function DesignPanel({ selectedTemplate, onTemplateSelect }: Desi
               key={template.id}
               template={template}
               isSelected={selectedTemplate === template.id}
-              onSelect={onTemplateSelect}
+              onSelect={setSelectedTemplate}
             />
           ))}
         </div>

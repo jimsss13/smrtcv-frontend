@@ -1,5 +1,7 @@
 "use client";
-import { useResumeValue, useResumeActions, useResumeField } from "@/hooks/useClientResumeStore";
+import { useClientResumeStore } from "@/hooks/useClientResumeStore";
+import { shallow } from "zustand/shallow";
+import { useCallback } from "react";
 import { PlusCircle, Trash2 } from "lucide-react";
 
 interface Props {
@@ -13,8 +15,7 @@ const InputGroup = ({
   placeholder, 
   onChange, 
   className = "",
-  helpText,
-  error
+  helpText
 }: { 
   label: string; 
   value: string; 
@@ -22,7 +23,6 @@ const InputGroup = ({
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; 
   className?: string;
   helpText?: string;
-  error?: string | null;
 }) => (
   <div className={`space-y-1.5 ${className}`}>
     <div className="flex justify-between items-center">
@@ -38,26 +38,100 @@ const InputGroup = ({
       value={value || ""}
       onChange={onChange}
       placeholder={placeholder}
-      className={`flex h-10 w-full rounded-md border ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500'} bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all shadow-sm`}
+      className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm placeholder:text-gray-400 
+                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
+                 disabled:cursor-not-allowed disabled:opacity-50 transition-all shadow-sm"
     />
-    {error && <p className="text-[10px] text-red-500 font-medium">{error}</p>}
   </div>
 );
 
 export function EducationForm({ selectedTemplate }: Props) {
-  const education = useResumeValue((state) => state.resume.education);
-  const { addSection, removeSection } = useResumeActions();
+  const { education, updateField, addSection, removeSection } = useClientResumeStore(useCallback((state: any) => ({
+    education: state.resume.education,
+    updateField: state.updateField,
+    addSection: state.addSection,
+    removeSection: state.removeSection
+  }), []), shallow);
 
   return (
     <section className="space-y-6 animate-in fade-in duration-500">
-      {(education || []).map((_, i) => (
-        <EducationEntryItem 
-          key={i} 
-          index={i} 
-          isRemovable={education.length > 1}
-          onRemove={() => removeSection("education", i)}
-          selectedTemplate={selectedTemplate}
-        />
+      {(education || []).map((edu, i) => (
+        <div key={i} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4 relative group">
+          
+          {/* Header with Delete Button */}
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-sm font-bold text-gray-800">Education #{i + 1}</h3>
+            
+            {/* Only show delete if there is more than 1 item */}
+            {education.length > 1 && (
+              <button
+                onClick={() => removeSection("education", i)}
+                className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50"
+                title="Remove entry"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          <InputGroup
+            label="Institution"
+            value={edu.institution}
+            onChange={(e) => updateField(`education.${i}.institution`, e.target.value)}
+            placeholder="e.g. University of California"
+            helpText="School or University name"
+          />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <InputGroup
+              label="Degree"
+              value={edu.studyType}
+              onChange={(e) => updateField(`education.${i}.studyType`, e.target.value)}
+              placeholder="e.g. Bachelor of Science"
+            />
+            <InputGroup
+              label="Area of Study"
+              value={edu.area}
+              onChange={(e) => updateField(`education.${i}.area`, e.target.value)}
+              placeholder="e.g. Computer Science"
+              helpText="Major or Field"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <InputGroup
+              label="Start Date"
+              value={edu.startDate}
+              onChange={(e) => updateField(`education.${i}.startDate`, e.target.value)}
+              placeholder="YYYY-MM"
+              helpText="YYYY-MM"
+            />
+            <InputGroup
+              label="End Date"
+              value={edu.endDate}
+              onChange={(e) => updateField(`education.${i}.endDate`, e.target.value)}
+              placeholder="YYYY-MM or Present"
+              helpText="YYYY-MM or Present"
+            />
+          </div>
+
+          <InputGroup
+            label="Location"
+            value={edu.location || ""}
+            onChange={(e) => updateField(`education.${i}.location`, e.target.value)}
+            placeholder="e.g. San Francisco, CA"
+          />
+          
+          {selectedTemplate === 'traditional' && (
+            <InputGroup
+              label="Grade / GPA"
+              value={edu.score || ""}
+              onChange={(e) => updateField(`education.${i}.score`, e.target.value)}
+              placeholder="e.g. 4.0 GPA"
+              helpText="Optional"
+            />
+          )}
+        </div>
       ))}
 
       <button 
@@ -79,96 +153,4 @@ export function EducationForm({ selectedTemplate }: Props) {
       </button>
     </section>
   )
-}
-
-function EducationEntryItem({ index, isRemovable, onRemove, selectedTemplate }: any) {
-  const [institution, setInstitution, institutionError] = useResumeField<string>(`education.${index}.institution`);
-  const [studyType, setStudyType, studyTypeError] = useResumeField<string>(`education.${index}.studyType`);
-  const [area, setArea, areaError] = useResumeField<string>(`education.${index}.area`);
-  const [startDate, setStartDate, startDateError] = useResumeField<string>(`education.${index}.startDate`);
-  const [endDate, setEndDate, endDateError] = useResumeField<string>(`education.${index}.endDate`);
-  const [location, setLocation, locationError] = useResumeField<string>(`education.${index}.location`);
-  const [score, setScore, scoreError] = useResumeField<string>(`education.${index}.score`);
-
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4 relative group">
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="text-sm font-bold text-gray-800">Education #{index + 1}</h3>
-        {isRemovable && (
-          <button
-            onClick={onRemove}
-            className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50"
-            title="Remove entry"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
-      <InputGroup
-        label="Institution"
-        value={institution}
-        onChange={(e) => setInstitution(e.target.value)}
-        placeholder="e.g. University of California"
-        helpText="School or University name"
-        error={institutionError}
-      />
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <InputGroup
-          label="Degree"
-          value={studyType}
-          onChange={(e) => setStudyType(e.target.value)}
-          placeholder="e.g. Bachelor of Science"
-          error={studyTypeError}
-        />
-        <InputGroup
-          label="Area of Study"
-          value={area}
-          onChange={(e) => setArea(e.target.value)}
-          placeholder="e.g. Computer Science"
-          helpText="Major or Field"
-          error={areaError}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <InputGroup
-          label="Start Date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          placeholder="YYYY-MM"
-          helpText="YYYY-MM"
-          error={startDateError}
-        />
-        <InputGroup
-          label="End Date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          placeholder="YYYY-MM or Present"
-          helpText="YYYY-MM or Present"
-          error={endDateError}
-        />
-      </div>
-
-      <InputGroup
-        label="Location"
-        value={location || ""}
-        onChange={(e) => setLocation(e.target.value)}
-        placeholder="e.g. San Francisco, CA"
-        error={locationError}
-      />
-      
-      {selectedTemplate === 'traditional' && (
-        <InputGroup
-          label="Grade / GPA"
-          value={score || ""}
-          onChange={(e) => setScore(e.target.value)}
-          placeholder="e.g. 4.0 GPA"
-          helpText="Optional"
-          error={scoreError}
-        />
-      )}
-    </div>
-  );
 }

@@ -20,18 +20,11 @@ import {
   History,
   RotateCcw,
   CheckCircle2,
-  Trash2,
-  AlertCircle
+  Trash2
 } from "lucide-react";
-import { 
-  useClientResumeStore, 
-  useResumeActions, 
-  useResumeValue,
-  useValidationErrors
-} from "@/hooks/useClientResumeStore";
-import { useShallow } from "zustand/react/shallow";
-import { Resume } from "@/types/resume-builder";
-import { ResumeState } from "@/stores/resumeStore";
+import { useClientResumeStore } from "@/hooks/useClientResumeStore";
+import { shallow } from "zustand/shallow";
+import { Resume } from "@/types/resume";
 import { calculateResumeScore } from "@/lib/scoring";
 import { analyzeATSCompatibility, ATSAnalysisResult } from "@/lib/ats-service";
 
@@ -68,10 +61,6 @@ import { CertificatesForm } from "@/components/builder/form/CertificatesForm";
 import { PublicationsForm } from "@/components/builder/form/PublicationsForm";
 import { VolunteerForm } from "@/components/builder/form/VolunteerForm";
 import { ReferencesForm } from "@/components/builder/form/ReferencesForm";
-
-interface Props {
-  selectedTemplate: string;
-}
 
 // Configuration mapping keys to Titles and Components
 const SECTION_CONFIG: Record<keyof Resume, { title: string; component: any }> = {
@@ -166,20 +155,26 @@ function DraggableAccordion({ id, title, isOpen, onToggle, children }: Accordion
   );
 }
 
-export default function ResumeForm({ selectedTemplate }: Props) {
-  const resume = useResumeValue((state) => state.resume);
-  const sectionOrder = useResumeValue((state) => state.sectionOrder);
-  const versions = useResumeValue((state) => state.versions);
-  const validationErrors = useValidationErrors();
-  
+export default function ResumeForm() {
   const { 
+    resume, 
+    sectionOrder, 
     reorderSections,
+    versions,
     saveVersion,
     restoreVersion,
-    deleteVersion
-  } = useResumeActions();
-
-  const errorCount = Object.keys(validationErrors).length;
+    deleteVersion,
+    selectedTemplate
+  } = useClientResumeStore(useCallback((state) => ({
+    resume: state.resume,
+    sectionOrder: state.sectionOrder, 
+    reorderSections: state.reorderSections,
+    versions: state.versions,
+    saveVersion: state.saveVersion,
+    restoreVersion: state.restoreVersion,
+    deleteVersion: state.deleteVersion,
+    selectedTemplate: state.selectedTemplate
+  }), []), shallow);
 
   const scoreData = useMemo(() => calculateResumeScore(resume), [resume]);
   const atsData = useMemo(() => analyzeATSCompatibility(resume), [resume]);
@@ -360,14 +355,6 @@ export default function ResumeForm({ selectedTemplate }: Props) {
 
   return (
     <div className="flex flex-col h-full bg-gray-50 max-w-4xl mx-auto shadow-2xl rounded-2xl overflow-hidden border border-gray-200">
-      {/* Validation Summary Header */}
-      {errorCount > 0 && (
-        <div className="bg-red-50 border-b border-red-100 px-4 py-2 flex items-center gap-2 text-red-600 text-xs font-medium">
-          <AlertCircle className="w-3.5 h-3.5" />
-          <span>{errorCount} validation error{errorCount > 1 ? 's' : ''} found. Please correct them for a better resume.</span>
-        </div>
-      )}
-
       {/* Top Utility Bar: Score & Integrations */}
       <div className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

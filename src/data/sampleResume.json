@@ -1,0 +1,171 @@
+{
+  "basics": {
+    "name": "Dr. Emily Carter",
+    "label": "General Physician",
+    "image": "",
+    "email": "emily.carter@example.com",
+    "phone": "+1 415 555 0912",
+    "url": "https://dremilycarter.com",
+    "summary": "Board-certified general physician with over 8 years of experience providing patient-centered care in hospital and outpatient settings. Passionate about preventive medicine, clinical research, and leveraging technology to improve healthcare delivery.",
+    "location": {
+      "city": "San Francisco",
+      "region": "California",
+      "countryCode": "US"
+    },
+    "profiles": [
+      {
+        "network": "LinkedIn",
+        "username": "dremilycarter",
+        "url": "https://www.linkedin.com/in/dremilycarter"
+      }
+    ]
+  },
+  "work": [
+    {
+      "name": "St. Mary’s Medical Center",
+      "position": "General Physician",
+      "url": "https://www.stmaryshealth.org/",
+      "startDate": "2018-03-01",
+      "summary": "Delivering general medical care to adult and pediatric patients; collaborating with multidisciplinary teams to ensure accurate diagnosis and effective treatment.",
+      "highlights": [
+        "Managed over 2,500 patient visits annually with a 96% patient satisfaction rate.",
+        "Led implementation of an electronic prescription system that reduced medication errors by 22%.",
+        "Mentored 5 resident doctors on diagnostic methodology and patient communication."
+      ]
+    },
+    {
+      "name": "Bay Area Community Clinic",
+      "position": "Resident Doctor (Internal Medicine)",
+      "url": "",
+      "startDate": "2015-06-01",
+      "summary": "Provided supervised medical care in the internal medicine department with exposure to emergency, outpatient, and chronic care units.",
+      "highlights": [
+        "Conducted over 1,000 physical exams and preventive screenings per year.",
+        "Assisted in research on hypertension management published in the Journal of Internal Medicine (2017)."
+      ]
+    },
+    {
+      "name": "Bay Area Community Clinic",
+      "position": "Surgeon (Orthopedics)",
+      "url": "",
+      "startDate": "2015-06-01",
+      "summary": "Provided supervised medical care in the internal medicine department with exposure to emergency, outpatient, and chronic care units.",
+      "highlights": [
+        "Conducted over 1,000 physical exams and preventive screenings per year.",
+        "Assisted in research on hypertension management published in the Journal of Internal Medicine (2017)."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "University of California, San Francisco (UCSF)",
+      "url": "https://www.ucsf.edu/",
+      "area": "Medicine",
+      "studyType": "Doctor of Medicine (M.D.)",
+      "startDate": "2011-08-01",
+      "endDate": "2015-05-01"
+    },
+    {
+      "institution": "Stanford University",
+      "url": "",
+      "area": "Biology",
+      "studyType": "Bachelor of Science (B.Sc.)",
+      "startDate": "2007-09-01",
+      "endDate": "2011-06-01"
+    }
+  ],
+  "certificates": [
+    {
+      "name": "Board Certification – Internal Medicine",
+      "issuer": "American Board of Internal Medicine (ABIM)",
+      "date": "2018-08-01",
+      "url": "https://www.abim.org/"
+    },
+    {
+      "name": "Advanced Cardiac Life Support (ACLS)",
+      "issuer": "American Heart Association",
+      "date": "2022-02-15",
+      "url": ""
+    }
+  ],
+  "publications": [
+    {
+      "name": "Effective Hypertension Management in Community Clinics",
+      "publisher": "Journal of Internal Medicine",
+      "releaseDate": "2017-09-01",
+      "url": "https://journalofinternalmed.org/hypertension2017",
+      "summary": "Co-authored a study demonstrating 15% improvement in blood pressure control through structured lifestyle intervention."
+    }
+  ],
+  "skills": [
+    {
+      "name": "Medical Expertise",
+      "level": "Expert",
+      "keywords": [
+        "Primary Care",
+        "Preventive Medicine",
+        "Chronic Disease Management",
+        "Clinical Diagnosis"
+      ]
+    },
+    {
+      "name": "Technical Skills",
+      "level": "",
+      "keywords": [
+        "Electronic Health Records (EHR)",
+        "Telemedicine",
+        "Medical Data Analysis"
+      ]
+    },
+    {
+      "name": "Soft Skills",
+      "level": "",
+      "keywords": [
+        "Patient Communication",
+        "Leadership",
+        "Team Collaboration"
+      ]
+    }
+  ],
+  "awards": [
+    {
+      "title": "Excellence in Patient Care Award",
+      "date": "2021-05-01",
+      "awarder": "St. Mary’s Medical Center",
+      "summary": "Recognized for outstanding dedication to patient outcomes and compassionate care."
+    }
+  ],
+  "languages": [
+    { "language": "English", "fluency": "Native" },
+    { "language": "Spanish", "fluency": "Professional working proficiency" }
+  ],
+  "interests": [
+    {
+      "name": "Medical Research",
+      "keywords": ["Preventive Health", "Public Health Policy"]
+    },
+    {
+      "name": "Personal",
+      "keywords": ["Hiking", "Photography", "Yoga"]
+    }
+  ],
+  "projects": [
+    {
+      "name": "TeleHealth Pilot Program",
+      "startDate": "2020-04-01",
+      "endDate": "2021-04-01",
+      "description": "Led a hospital-wide pilot to implement remote patient monitoring and consultations during COVID-19 pandemic.",
+      "highlights": [
+        "Served 600+ remote patients with 95% continuity of care.",
+        "Reduced in-person visits by 40% during lockdown while maintaining service quality."
+      ],
+      "url": "https://stmaryshealth.org/telehealth"
+    }
+  ],
+  "references": [
+    {
+      "name": "Dr. Michael Roberts",
+      "reference": "Department Head, St. Mary’s Medical Center — michael.roberts@stmaryshealth.org"
+    }
+  ]
+}

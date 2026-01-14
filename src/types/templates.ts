@@ -7,4 +7,10 @@ export interface Template {
   popular?: boolean;
   thumbnail: string;
   path: string;
+  thumbnail_sas_url?: string;
+  html_sas_url?: string;
+  config_json_sas_url?: string;
+  css_sas_url?: string;
+  css_sas_urls?: string[];
+  isPreFetched?: boolean;
 }

@@ -1,13 +1,21 @@
 "use client";
-import { useResumeField, useResumeValue, useResumeActions } from "@/hooks/useClientResumeStore";
-import { useShallow } from "zustand/react/shallow";
+import { useClientResumeStore } from "@/hooks/useClientResumeStore";
+import { shallow } from "zustand/shallow";
 import { useCallback } from "react";
+import { z } from "zod";
 import { getSummarySuggestions, fixGrammar } from "@/lib/ai-service";
 import { Sparkles } from "lucide-react";
 
 interface Props {
   selectedTemplate: string;
 }
+
+// Validation Schema
+const basicsSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().min(5, "Phone number is too short"),
+});
 
 const InputGroup = ({ 
   label, 
@@ -56,8 +64,7 @@ const TextAreaGroup = ({
   onChange, 
   className = "",
   helpText,
-  onFixGrammar,
-  error
+  onFixGrammar
 }: { 
   label: string; 
   value: string; 
@@ -66,7 +73,6 @@ const TextAreaGroup = ({
   className?: string;
   helpText?: string;
   onFixGrammar?: () => void;
-  error?: string;
 }) => (
   <div className={`space-y-1.5 ${className}`}>
     <div className="flex justify-between items-center">
@@ -93,28 +99,18 @@ const TextAreaGroup = ({
       value={value || ""}
       onChange={onChange}
       placeholder={placeholder}
-      className={`flex min-h-[120px] w-full rounded-md border bg-white px-3 py-2 text-sm placeholder:text-gray-400 
+      className="flex min-h-[120px] w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm placeholder:text-gray-400 
                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
-                 disabled:cursor-not-allowed disabled:opacity-50 resize-y transition-all shadow-sm
-                 ${error ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200'}`}
+                 disabled:cursor-not-allowed disabled:opacity-50 resize-y shadow-sm"
     />
-    {error && <p className="text-[10px] text-red-500 font-medium mt-1">{error}</p>}
   </div>
 );
 
 export function BasicsForm({ selectedTemplate }: Props) {
-  const [name, setName, nameError] = useResumeField<string>("basics.name");
-  const [label, setLabel, labelError] = useResumeField<string>("basics.label");
-  const [email, setEmail, emailError] = useResumeField<string>("basics.email");
-  const [phone, setPhone, phoneError] = useResumeField<string>("basics.phone");
-  const [url, setUrl, urlError] = useResumeField<string>("basics.url");
-  const [address, setAddress, addressError] = useResumeField<string>("basics.location.address");
-  const [city, setCity, cityError] = useResumeField<string>("basics.location.city");
-  const [region, setRegion, regionError] = useResumeField<string>("basics.location.region");
-  const [postalCode, setPostalCode, postalCodeError] = useResumeField<string>("basics.location.postalCode");
-  const [countryCode, setCountryCode, countryCodeError] = useResumeField<string>("basics.location.countryCode");
-  const [nationality, setNationality, nationalityError] = useResumeField<string>("basics.nationality");
-  const [summary, setSummary, summaryError] = useResumeField<string>("basics.summary");
+  const { basics, updateField } = useClientResumeStore(useCallback((state: any) => ({
+    basics: state.resume.basics,
+    updateField: state.updateField
+  }), []), shallow);
 
   return (
     <section className="space-y-6 animate-in fade-in duration-500">
@@ -123,20 +119,18 @@ export function BasicsForm({ selectedTemplate }: Props) {
       <div className="grid grid-cols-1 gap-4">
         <InputGroup
           label="Full Name"
-          value={name || ""}
-          onChange={(e) => setName(e.target.value)}
+          value={basics.name}
+          onChange={(e) => updateField("basics.name", e.target.value)}
           placeholder="e.g. John Doe"
           helpText="As it appears on your ID"
-          error={nameError}
         />
         
         <InputGroup
           label="Job Title"
-          value={label || ""}
-          onChange={(e) => setLabel(e.target.value)}
+          value={basics.label}
+          onChange={(e) => updateField("basics.label", e.target.value)}
           placeholder="e.g. Senior Frontend Developer"
           helpText="Your current or desired role"
-          error={labelError}
         />
       </div>
 
@@ -145,32 +139,29 @@ export function BasicsForm({ selectedTemplate }: Props) {
         <div className="space-y-4">
           <InputGroup
             label="Email"
-            value={email || ""}
-            onChange={(e) => setEmail(e.target.value)}
+            value={basics.email}
+            onChange={(e) => updateField("basics.email", e.target.value)}
             placeholder="john@example.com"
             helpText="Professional email preferred"
-            error={emailError}
           />
         </div>
         <div className="space-y-4">
           <InputGroup
             label="Phone"
-            value={phone || ""}
-            onChange={(e) => setPhone(e.target.value)}
+            value={basics.phone}
+            onChange={(e) => updateField("basics.phone", e.target.value)}
             placeholder="+1 234 567 890"
             helpText="Include country code"
-            error={phoneError}
           />
         </div>
       </div>
 
       <InputGroup
         label="Website / LinkedIn"
-        value={url || ""}
-        onChange={(e) => setUrl(e.target.value)}
+        value={basics.url}
+        onChange={(e) => updateField("basics.url", e.target.value)}
         placeholder="https://linkedin.com/in/johndoe"
         helpText="Portfolio or LinkedIn profile"
-        error={urlError}
       />
 
       {/* Location - Grouped logically */}
@@ -180,27 +171,24 @@ export function BasicsForm({ selectedTemplate }: Props) {
         {selectedTemplate === 'traditional' && (
           <InputGroup
             label="Address"
-            value={address || ''}
-            onChange={(e) => setAddress(e.target.value)}
+            value={basics.location?.address || ''}
+            onChange={(e) => updateField("basics.location.address", e.target.value)}
             placeholder="123 Main St, Apt 4B"
-            error={addressError}
           />
         )}
 
         <div className="grid grid-cols-2 gap-4">
           <InputGroup
             label="City"
-            value={city || ""}
-            onChange={(e) => setCity(e.target.value)}
+            value={basics.location.city}
+            onChange={(e) => updateField("basics.location.city", e.target.value)}
             placeholder="New York"
-            error={cityError}
           />
           <InputGroup
             label="Region / State"
-            value={region || ""}
-            onChange={(e) => setRegion(e.target.value)}
+            value={basics.location.region}
+            onChange={(e) => updateField("basics.location.region", e.target.value)}
             placeholder="NY"
-            error={regionError}
           />
         </div>
 
@@ -208,29 +196,26 @@ export function BasicsForm({ selectedTemplate }: Props) {
           {selectedTemplate === 'traditional' && (
             <InputGroup
               label="Postal Code"
-              value={postalCode || ''}
-              onChange={(e) => setPostalCode(e.target.value)}
+              value={basics.location?.postalCode || ''}
+              onChange={(e) => updateField("basics.location.postalCode", e.target.value)}
               placeholder="10001"
-              error={postalCodeError}
             />
           )}
           <InputGroup
             label="Country"
-            value={countryCode || ""}
-            onChange={(e) => setCountryCode(e.target.value)}
+            value={basics.location.countryCode}
+            onChange={(e) => updateField("basics.location.countryCode", e.target.value)}
             placeholder="United States"
-            error={countryCodeError}
           />
         </div>
         
         {selectedTemplate === 'traditional' && (
           <InputGroup
             label="Nationality"
-            value={nationality || ''}
-            onChange={(e) => setNationality(e.target.value)}
+            value={basics.nationality || ''}
+            onChange={(e) => updateField("basics.nationality", e.target.value)}
             placeholder="American"
             helpText="Optional"
-            error={nationalityError}
           />
         )}
       </div>
@@ -239,14 +224,13 @@ export function BasicsForm({ selectedTemplate }: Props) {
       <div className="pt-2 border-t border-gray-100">
         <TextAreaGroup
           label="Profile Summary"
-          value={summary || ""}
-          onChange={(e) => setSummary(e.target.value)}
+          value={basics.summary}
+          onChange={(e) => updateField("basics.summary", e.target.value)}
           placeholder="Briefly describe your professional background..."
           helpText="3-5 sentences recommended"
-          error={summaryError}
           onFixGrammar={() => {
-            const fixed = fixGrammar(summary || "");
-            setSummary(fixed);
+            const fixed = fixGrammar(basics.summary);
+            updateField("basics.summary", fixed);
           }}
         />
         <p className="text-[10px] text-gray-400 mt-1">Markdown supported</p>

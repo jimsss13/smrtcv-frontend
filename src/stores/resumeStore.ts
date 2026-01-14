@@ -1,24 +1,24 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { persist } from 'zustand/middleware';
-import { Resume } from '@/types/resume-builder';
-import { Template } from '@/types/templates'; // Import Template type
+import { Resume } from '@/types/resume';
+import { Template } from '@/types/template'; // Import Template type
 
 // --- 1. Type Safety Utilities ---
 type RecursiveKeyOf<TObj extends object> = {
   [TKey in keyof TObj & (string | number)]: TObj[TKey] extends any[]
-  ? `${TKey}` | `${TKey}.${number}` | `${TKey}.${number}.${RecursiveKeyOf<TObj[TKey][number]>}`
-  : TObj[TKey] extends object
-  ? `${TKey}` | `${TKey}.${RecursiveKeyOf<TObj[TKey]>}`
-  : `${TKey}`;
+    ? `${TKey}` | `${TKey}.${number}` | `${TKey}.${number}.${RecursiveKeyOf<TObj[TKey][number]>}`
+    : TObj[TKey] extends object
+    ? `${TKey}` | `${TKey}.${RecursiveKeyOf<TObj[TKey]>}`
+    : `${TKey}`;
 }[keyof TObj & (string | number)];
 
 type PathValue<T, P extends string> = P extends `${infer Key}.${infer Rest}`
   ? Key extends keyof T
-  ? PathValue<T[Key], Rest>
-  : T extends any[]
-  ? PathValue<T[number], Rest>
-  : never
+    ? PathValue<T[Key], Rest>
+    : T extends any[]
+    ? PathValue<T[number], Rest>
+    : never
   : P extends keyof T
   ? T[P]
   : T extends any[]
@@ -120,15 +120,13 @@ interface ResumeState {
   templates: Template[];
   selectedTemplate: string;
   exportSettings: ExportSettings;
-  versions: ResumeVersion[];
-  validationErrors: Record<string, string>; // New: Validation errors
+  versions: ResumeVersion[]; // New
 
   updateField: <P extends RecursiveKeyOf<Resume>>(
     path: P,
     value: PathValue<Resume, P>
   ) => void;
 
-  setValidationError: (path: string, error: string | null) => void; // New
   addSection: (section: keyof Resume, template: any) => void;
   removeSection: (section: keyof Resume, index: number) => void;
   updateStringArray: (path: RecursiveKeyOf<Resume>, value: string) => void;
@@ -154,8 +152,7 @@ export const useResumeStore = create(
         fontSize: 'medium',
         primaryColor: '#2563eb',
       },
-      versions: [],
-      validationErrors: {}, // Initialize
+      versions: [], // Initialize
 
       updateField: (path, value) => {
         set((state) => {
@@ -169,16 +166,6 @@ export const useResumeStore = create(
             current = current[key];
           }
           current[keys[keys.length - 1]] = value;
-        });
-      },
-
-      setValidationError: (path, error) => {
-        set((state) => {
-          if (error) {
-            state.validationErrors[path] = error;
-          } else {
-            delete state.validationErrors[path];
-          }
         });
       },
 
@@ -289,7 +276,7 @@ export const useResumeStore = create(
             (mergedResume[resumeKey] as any) = [blankEntryMap[resumeKey]];
           }
         });
-
+        
         return mergedState;
       }
     }
