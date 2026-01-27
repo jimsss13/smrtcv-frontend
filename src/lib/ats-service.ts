@@ -38,8 +38,8 @@ export const analyzeATSCompatibility = (resume: Resume): ATSAnalysisResult => {
     score -= 30;
   } else {
     resume.work.forEach((job, i) => {
-      if (!job.description || job.description.length < 50) {
-        suggestions.push(`Work entry #${i + 1} (${job.company}) has a very short description`);
+      if (!job.summary || job.summary.length < 50) {
+        suggestions.push(`Work entry #${i + 1} (${job.name}) has a very short summary`);
         score -= 5;
       }
     });

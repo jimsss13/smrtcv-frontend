@@ -1,19 +1,24 @@
 "use client";
 
-import { useCallback, useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from "next/image";
 import { useClientResumeStore, useResumeActions } from "@/hooks/useClientResumeStore";
+import { useShallow } from 'zustand/react/shallow';
+import { Settings, Maximize, Type, Palette as PaletteIcon, FileText } from "lucide-react";
 import { Template } from "@/types/template";
 import TemplateCard from "./TemplateCard";
-import { Settings, Maximize, Type, Palette as PaletteIcon, FileText } from "lucide-react";
 
-export default function DesignPanel() {
+interface DesignPanelProps {
+  view?: 'templates' | 'settings' | 'all';
+}
+
+export default function DesignPanel({ view = 'all' }: DesignPanelProps) {
   const { templates, selectedTemplate, exportSettings } = useClientResumeStore(
-    useCallback((state) => ({ 
+    useShallow((state) => ({ 
       templates: state.templates,
       selectedTemplate: state.selectedTemplate,
       exportSettings: state.exportSettings,
-    }), [])
+    }))
   );
 
   const { updateExportSettings, setSelectedTemplate } = useResumeActions();
@@ -34,30 +39,33 @@ export default function DesignPanel() {
   return (
     <div className="bg-white p-6 rounded-xl shadow-md h-full overflow-y-auto flex flex-col space-y-8 animate-in fade-in duration-500">
       {/* Template Selection */}
-      <section>
-        <div className="flex items-center gap-2 mb-6">
-          <Settings className="w-5 h-5 text-blue-600" />
-          <h2 className="text-xl font-bold text-gray-800">Choose a Template</h2>
-        </div>
+      {(view === 'all' || view === 'templates') && (
+        <section>
+          <div className="flex items-center gap-2 mb-6">
+            <Settings className="w-5 h-5 text-blue-600" />
+            <h2 className="text-xl font-bold text-gray-800">Choose a Template</h2>
+          </div>
 
-        <div className="grid grid-cols-2 gap-4 pb-4">
-          {templates.map((template: Template) => (
-            <TemplateCard
-              key={template.id}
-              template={template}
-              isSelected={selectedTemplate === template.id}
-              onSelect={setSelectedTemplate}
-            />
-          ))}
-        </div>
-      </section>
+          <div className="grid grid-cols-2 gap-4 pb-4">
+            {templates.map((template: Template) => (
+              <TemplateCard
+                key={template.id}
+                template={template}
+                isSelected={selectedTemplate === template.id}
+                onSelect={setSelectedTemplate}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Export & Formatting Settings */}
-      <section className="border-t border-gray-100 pt-8 space-y-6">
-        <div className="flex items-center gap-2 mb-4">
-          <FileText className="w-5 h-5 text-blue-600" />
-          <h2 className="text-xl font-bold text-gray-800">Export Settings</h2>
-        </div>
+      {(view === 'all' || view === 'settings') && (
+        <section className={`${view === 'all' ? 'border-t border-gray-100 pt-8' : ''} space-y-6`}>
+          <div className="flex items-center gap-2 mb-4">
+            <FileText className="w-5 h-5 text-blue-600" />
+            <h2 className="text-xl font-bold text-gray-800">Export Settings</h2>
+          </div>
 
         {/* Page Size & Margins */}
         <div className="grid grid-cols-2 gap-4">
@@ -124,6 +132,7 @@ export default function DesignPanel() {
           </div>
         </div>
       </section>
-    </div>
-  );
+    )}
+  </div>
+);
 }

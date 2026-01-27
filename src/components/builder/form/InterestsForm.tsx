@@ -1,8 +1,7 @@
 "use client";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { useClientResumeStore } from "@/hooks/useClientResumeStore";
-import { shallow } from "zustand/shallow";
-import { useCallback } from "react";
+import { useShallow } from 'zustand/react/shallow';
 
 const InputGroup = ({ label, value, placeholder, onChange }: any) => (
   <div className="space-y-1.5">
@@ -12,17 +11,17 @@ const InputGroup = ({ label, value, placeholder, onChange }: any) => (
 );
 
 export function InterestsForm() {
-  const { interests, updateField, updateStringArray, addSection, removeSection } = useClientResumeStore(useCallback((state: any) => ({
+  const { interests, updateField, updateStringArray, addSection, removeSection } = useClientResumeStore(useShallow((state: any) => ({
     interests: state.resume.interests,
     updateField: state.updateField,
     updateStringArray: state.updateStringArray,
     addSection: state.addSection,
     removeSection: state.removeSection
-  }), []), shallow);
+  })));
 
   return (
     <section className="space-y-6 animate-in fade-in duration-500">
-      {(interests || []).map((interest, i) => (
+      {(interests || []).map((interest: any, i: number) => (
         <div key={i} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-sm font-bold text-gray-800">Interest Group #{i + 1}</h3>

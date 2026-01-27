@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useResumeStore, ResumeState } from '@/stores/resumeStore';
 import { useShallow } from 'zustand/react/shallow';
 import { validateField } from '@/lib/validation';
@@ -11,22 +11,30 @@ import { validateField } from '@/lib/validation';
 export const useClientResumeStore = <T>(
   selector: (state: ResumeState) => T
 ): T => {
-  // 1. Initialize with a stable default value
-  const [state, setState] = useState<T>(() => selector(useResumeStore.getState()));
+  const [isHydrated, setIsHydrated] = useState(false);
+  
+  // During SSR and until hydration, we return the initial state from the store
+  // but we must be careful not to trigger infinite loops if the selector returns a new object.
+  // We use a ref to cache the initial snapshot for getServerSnapshot.
+  const serverSnapshot = useRef<T | null>(null);
+  const isInitialized = useRef(false);
+  
+  const getInitialState = () => {
+    if (!isInitialized.current) {
+      serverSnapshot.current = selector(useResumeStore.getState());
+      isInitialized.current = true;
+    }
+    return serverSnapshot.current as T;
+  };
+
+  // Use useResumeStore directly
+  const selectedState = useResumeStore(selector);
 
   useEffect(() => {
-    // 2. Sync with the actual store immediately on mount
-    setState(selector(useResumeStore.getState()));
+    setIsHydrated(true);
+  }, []);
 
-    // 3. Subscribe to future updates
-    const unsubscribe = useResumeStore.subscribe((newState) => {
-      setState(selector(newState));
-    });
-
-    return () => unsubscribe();
-  }, [selector]);
-
-  return state;
+  return isHydrated ? selectedState : getInitialState();
 };
 
 /**
@@ -44,6 +52,8 @@ export const useResumeValue = <T>(selector: (state: ResumeState) => T) => {
 export const useResumeActions = () => {
   return useResumeStore(
     useShallow((state) => ({
+      setResumeId: state.setResumeId,
+      setResumeTitle: state.setResumeTitle,
       setResume: state.setResume,
       updateField: state.updateField,
       setValidationError: state.setValidationError,
@@ -51,21 +61,37 @@ export const useResumeActions = () => {
       removeSection: state.removeSection,
       updateStringArray: state.updateStringArray,
       reorderSections: state.reorderSections,
-      setTemplates: state.setTemplates,
-      setSelectedTemplate: state.setSelectedTemplate,
       updateExportSettings: state.updateExportSettings,
       saveVersion: state.saveVersion,
       restoreVersion: state.restoreVersion,
       deleteVersion: state.deleteVersion,
+      updateFormConfig: state.updateFormConfig,
+      toggleSectionVisibility: state.toggleSectionVisibility,
+      setTemplates: state.setTemplates,
+      setSelectedTemplate: state.setSelectedTemplate,
     }))
   );
 };
 
 /**
  * Hook to get all validation errors.
+ * FIXED: Use useShallow to prevent infinite loops when returning a new object.
  */
 export const useValidationErrors = () => {
-  return useResumeValue((state) => state.validationErrors || {});
+  return useClientResumeStore(useShallow((state) => state.validationErrors || {}));
+};
+
+/**
+ * Hook to get validation errors for a specific section.
+ * FIXED: Memoize selector and use useShallow to prevent infinite loops.
+ */
+export const useSectionErrors = (section: string) => {
+  const selector = useMemo(() => (state: ResumeState) => {
+    const errors = state.validationErrors || {};
+    return Object.keys(errors).filter(path => path.startsWith(section));
+  }, [section]);
+  
+  return useClientResumeStore(useShallow(selector));
 };
 
 /**
@@ -78,13 +104,13 @@ export function useResumeField<T>(path: string) {
   const selector = useMemo(() => {
     return (state: ResumeState) => {
       const keys = path.split(".");
-      let current = state.resume as any;
+      let current: unknown = state.resume;
       
       if (current === undefined || current === null) return undefined;
       
       for (const key of keys) {
-        if (current === undefined || current === null) return undefined;
-        current = current[key];
+        if (current === undefined || current === null || typeof current !== 'object') return undefined;
+        current = (current as Record<string, unknown>)[key];
       }
       return current as T;
     };
@@ -96,8 +122,8 @@ export function useResumeField<T>(path: string) {
   const error = useResumeValue((state) => state.validationErrors?.[path]);
 
   const setValue = (newValue: T) => {
-    // Cast to any to satisfy the complex RecursiveKeyOf type
-    updateField(path as any, newValue as any);
+    // Use type assertion to satisfy the complex RecursiveKeyOf type
+    updateField(path as Parameters<typeof updateField>[0], newValue as Parameters<typeof updateField>[1]);
     
     // Run validation immediately
     try {

@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { Resume } from '@/types/dashboard-resume';
+import { ResumeDB, resumeService } from '@/services/resumeService';
 import { ResumeHeader } from '@/components/resumes/ResumeHeader';
 import { AddResumeSection } from '@/components/resumes/AddResumeSection';
 import { RecentResumesSection } from '@/components/resumes/RecentResumesSection';
@@ -15,9 +16,10 @@ import { ResumeCardSkeleton } from '@/components/dashboard/ResumeCardSkeleton';
  * Displays a grid of existing resumes and an option to create a new one.
  */
 export default function ResumesPage() {
-  const { data, isLoading, error } = useResumes();
-  const [localResumes, setLocalResumes] = useState<Resume[]>([]);
-  const [resumeToDelete, setResumeToDelete] = useState<string | number | null>(null);
+  const router = useRouter();
+  const { data, isLoading, error, refetch } = useResumes();
+  const [localResumes, setLocalResumes] = useState<ResumeDB[]>([]);
+  const [resumeToDelete, setResumeToDelete] = useState<string | null>(null);
 
   // Sync server data to local state for optimistic UI updates (deletion)
   useEffect(() => {
@@ -26,19 +28,26 @@ export default function ResumesPage() {
     }
   }, [data]);
 
-  const handleDeleteClick = (id: string | number) => {
+  const handleDeleteClick = (id: string) => {
     setResumeToDelete(id);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (resumeToDelete) {
-      setLocalResumes(prev => prev.filter(r => r.id !== resumeToDelete));
-      setResumeToDelete(null);
+      try {
+        await resumeService.deleteResume(resumeToDelete);
+        setLocalResumes(prev => prev.filter(r => r.id !== resumeToDelete));
+        setResumeToDelete(null);
+        refetch();
+      } catch (error) {
+        console.error("Failed to delete resume:", error);
+        alert("Failed to delete resume. Please try again.");
+      }
     }
   };
 
-  const handleEdit = (id: string | number) => {
-    window.location.href = `/builder?id=${id}`;
+  const handleEdit = (id: string) => {
+    router.push(`/builder?id=${id}`);
   };
 
   return (

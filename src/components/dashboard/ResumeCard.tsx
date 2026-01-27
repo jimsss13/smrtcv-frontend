@@ -2,12 +2,12 @@
 
 import React, { memo } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Resume } from '@/types/dashboard-resume';
+import { ResumeDB } from '@/services/resumeService';
 
 interface ResumeCardProps {
-  resume: Resume;
-  onDelete: (id: string | number) => void;
-  onEdit: (id: string | number) => void;
+  resume: ResumeDB;
+  onDelete: (id: string) => void;
+  onEdit: (id: string) => void;
 }
 
 export const ResumeCard = memo(({ 
@@ -15,6 +15,12 @@ export const ResumeCard = memo(({
   onDelete, 
   onEdit 
 }: ResumeCardProps) => {
+  const formattedDate = new Date(resume.updated_at).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+
   return (
     <article className="animate-in fade-in duration-500 relative group">
       <div className="relative aspect-4/3 bg-white border-2 border-gray-200 rounded-2xl sm:rounded-4xl shadow-sm group-hover:shadow-xl group-hover:border-primary/20 transition-all duration-300 overflow-hidden cursor-pointer">
@@ -57,8 +63,8 @@ export const ResumeCard = memo(({
       </div>
 
       <div className="mt-3 sm:mt-4 ml-1">
-        <p className="text-xs sm:text-base font-bold text-foreground truncate">{resume.name}</p>
-        <p className="text-[9px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">{resume.date}</p>
+        <p className="text-xs sm:text-base font-bold text-foreground truncate">{resume.title}</p>
+        <p className="text-[9px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">{formattedDate}</p>
       </div>
     </article>
   );

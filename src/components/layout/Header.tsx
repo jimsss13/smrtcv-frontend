@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { ROUTES } from '@/constants/routes';   
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -27,10 +26,12 @@ export const Header = () => {
   // Hide the landing header on dashboard-related routes as they have their own DashboardHeader
   const isDashboardRoute = pathname?.startsWith('/dashboard') || 
                           pathname?.startsWith('/resumes') || 
-                          pathname?.startsWith('/templates') ||
+                          pathname?.startsWith('/templates') || 
                           pathname?.startsWith('/account');
 
-  if (isDashboardRoute) return null;
+  if (isDashboardRoute) {
+    return null;
+  }
 
   const handleLinkClick = () => {
     setIsMobileMenuOpen(false);
@@ -39,18 +40,13 @@ export const Header = () => {
   return (
     <header className="fixed top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-lg">
       <div className="container mx-auto flex h-16 max-w-8xl items-center justify-between px-4">
-        <Link href="/" className="flex items-center text-lg font-bold">
-          <div>
-            <Image
-              src="/logo.png" 
-              alt="Smart CV Logo"
-              width={120} 
-              height={30} 
-              className="h-10 w-auto" 
-              priority
-              suppressHydrationWarning
-            />
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform duration-200">
+            <span className="text-xl font-black tracking-tighter">S</span>
           </div>
+          <span className="text-xl font-black text-gray-900 tracking-tight group-hover:text-blue-600 transition-colors">
+            smrt<span className="text-blue-600 group-hover:text-gray-900">cv</span>
+          </span>
         </Link>
 
         {/* Desktop Nav */}

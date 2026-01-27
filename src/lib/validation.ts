@@ -135,8 +135,8 @@ export type ValidationErrors = {
   [key: string]: string;
 };
 
-export const validateField = (path: string, value: any): string | null => {
-  let schema: z.ZodTypeAny;
+export const validateField = (path: string, value: unknown): string | null => {
+  let schema: z.ZodTypeAny | undefined;
 
   const parts = path.split(".");
   const section = parts[0];
@@ -146,58 +146,64 @@ export const validateField = (path: string, value: any): string | null => {
     const field = parts[1];
     if (field === "location") {
       const locField = parts[2];
-      schema = (locationSchema.shape as any)[locField];
+      schema = (locationSchema.shape as Record<string, z.ZodTypeAny>)[locField];
     } else if (field === "profiles") {
       const profileField = parts[3];
-      schema = (profileSchema.shape as any)[profileField];
+      schema = (profileSchema.shape as Record<string, z.ZodTypeAny>)[profileField];
     } else {
-      schema = (basicsSchema.shape as any)[field];
+      schema = (basicsSchema.shape as Record<string, z.ZodTypeAny>)[field];
     }
   } else if (section === "work") {
     const field = parts[2];
-    schema = (workSchema.shape as any)[field];
+    schema = (workSchema.shape as Record<string, z.ZodTypeAny>)[field];
   } else if (section === "education") {
     const field = parts[2];
-    schema = (educationSchema.shape as any)[field];
+    schema = (educationSchema.shape as Record<string, z.ZodTypeAny>)[field];
   } else if (section === "skills") {
     const field = parts[2];
-    schema = (skillSchema.shape as any)[field];
+    schema = (skillSchema.shape as Record<string, z.ZodTypeAny>)[field];
   } else if (section === "projects") {
     const field = parts[2];
-    schema = (projectSchema.shape as any)[field];
+    schema = (projectSchema.shape as Record<string, z.ZodTypeAny>)[field];
   } else if (section === "volunteer") {
     const field = parts[2];
-    schema = (volunteerSchema.shape as any)[field];
+    schema = (volunteerSchema.shape as Record<string, z.ZodTypeAny>)[field];
   } else if (section === "awards") {
     const field = parts[2];
-    schema = (awardSchema.shape as any)[field];
+    schema = (awardSchema.shape as Record<string, z.ZodTypeAny>)[field];
   } else if (section === "publications") {
     const field = parts[2];
-    schema = (publicationSchema.shape as any)[field];
+    schema = (publicationSchema.shape as Record<string, z.ZodTypeAny>)[field];
   } else if (section === "languages") {
     const field = parts[2];
-    schema = (languageSchema.shape as any)[field];
+    schema = (languageSchema.shape as Record<string, z.ZodTypeAny>)[field];
   } else if (section === "interests") {
     const field = parts[2];
-    schema = (interestSchema.shape as any)[field];
+    schema = (interestSchema.shape as Record<string, z.ZodTypeAny>)[field];
   } else if (section === "references") {
     const field = parts[2];
-    schema = (referenceSchema.shape as any)[field];
+    schema = (referenceSchema.shape as Record<string, z.ZodTypeAny>)[field];
   } else if (section === "advisory") {
     const field = parts[2];
-    schema = (advisorySchema.shape as any)[field];
+    schema = (advisorySchema.shape as Record<string, z.ZodTypeAny>)[field];
   } else if (section === "certificates") {
     const field = parts[2];
-    schema = (certificateSchema.shape as any)[field];
-  } else {
+    schema = (certificateSchema.shape as Record<string, z.ZodTypeAny>)[field];
+  }
+
+  // If no schema found, it might be a dynamic field. 
+  // For now, we allow dynamic fields without strict validation unless they are empty
+  if (!schema) {
+    if (value === undefined || value === null || value === "") {
+      // Check if it's a known required field (placeholder for dynamic validation)
+      // return "This field is required"; 
+    }
     return null;
   }
 
-  if (!schema) return null;
-
   const result = schema.safeParse(value);
   if (!result.success) {
-    return result.error.errors[0].message;
+    return result.error.issues[0].message;
   }
 
   return null;

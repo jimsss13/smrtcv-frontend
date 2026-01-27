@@ -19,7 +19,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   children,
   hideNav = false
 }) => {
-  const { user, loading } = useAuth();
+  const { data: user, isLoading: loading } = useAuth();
 
   if (loading) {
     return (
@@ -31,7 +31,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   return (
     <div className="min-h-screen bg-white text-foreground selection:bg-primary selection:text-white">
-      <DashboardHeader userName={user?.name || "User"} />
+      <DashboardHeader userName={user?.data?.[0]?.account?.name?.firstName || "User"} />
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         {!hideNav && <DashboardNav />}
         <div className={hideNav ? "mt-0" : "mt-8"}>

@@ -1,7 +1,6 @@
 "use client";
 import { useClientResumeStore } from "@/hooks/useClientResumeStore";
-import { shallow } from "zustand/shallow";
-import { useCallback } from "react";
+import { useShallow } from 'zustand/react/shallow';
 import { PlusCircle, Trash2, Award } from "lucide-react";
 import { z } from "zod";
 import { useState } from "react";
@@ -26,12 +25,12 @@ const InputGroup = ({ label, value, placeholder, onChange, error }: any) => (
 );
 
 export function CertificatesForm() {
-  const { certificates, updateField, addSection, removeSection } = useClientResumeStore(useCallback((state: any) => ({
+  const { certificates, updateField, addSection, removeSection } = useClientResumeStore(useShallow((state: any) => ({
     certificates: state.resume.certificates,
     updateField: state.updateField,
     addSection: state.addSection,
     removeSection: state.removeSection
-  }), []), shallow);
+  })));
   const [errors, setErrors] = useState<any[]>([]);
 
   const validate = (index: number) => {
@@ -58,7 +57,7 @@ export function CertificatesForm() {
         </div>
       </div>
 
-      {(certificates || []).map((cert, i) => (
+      {(certificates || []).map((cert: any, i: number) => (
         <div key={i} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4 hover:border-purple-200 transition-colors">
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-sm font-bold text-gray-800">Certificate #{i + 1}</h3>

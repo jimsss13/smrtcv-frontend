@@ -1,11 +1,11 @@
 import React from 'react';
-import { Resume } from '@/types/dashboard-resume';
+import { ResumeDB } from '@/services/resumeService';
 import { ResumeCard } from '@/components/dashboard/ResumeCard';
 
 interface RecentResumesSectionProps {
-  resumes: Resume[];
-  onDelete: (id: string | number) => void;
-  onEdit: (id: string | number) => void;
+  resumes: ResumeDB[];
+  onDelete: (id: string) => void;
+  onEdit: (id: string) => void;
 }
 
 export const RecentResumesSection = ({ resumes, onDelete, onEdit }: RecentResumesSectionProps) => {

@@ -51,6 +51,7 @@ export interface Work {
   startDate: string;
   endDate?: string;
   summary: string;
+  location?: string;
   highlights: string[];
 }
 
@@ -131,4 +132,7 @@ export interface Volunteer {
 export interface Advisory {
   organization: string;
   position: string;
+  startDate?: string;
+  endDate?: string;
+  summary?: string;
 }

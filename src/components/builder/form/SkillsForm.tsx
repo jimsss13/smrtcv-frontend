@@ -1,29 +1,20 @@
 "use client";
-import { useClientResumeStore } from "@/hooks/useClientResumeStore";
-import { shallow } from "zustand/shallow";
-import { useCallback } from "react";
+import { useClientResumeStore, useResumeActions } from "@/hooks/useClientResumeStore";
+import { useShallow } from 'zustand/react/shallow';
 import { PlusCircle, Trash2, Brain, Sparkles } from "lucide-react";
 import { getKeywordOptimization } from "@/lib/ai-service";
-
-const InputGroup = ({ label, value, placeholder, onChange, helpText }: any) => (
-  <div className="space-y-1.5">
-    <div className="flex justify-between items-center">
-      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</label>
-      {helpText && <span className="text-[10px] text-gray-400 font-medium italic">{helpText}</span>}
-    </div>
-    <input type="text" value={value || ""} onChange={onChange} placeholder={placeholder} className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm" />
-  </div>
-);
+import { useDynamicForm } from "@/hooks/useDynamicForm";
+import { ConfigurableField } from "./FormShared";
 
 export function SkillsForm() {
-  const { skills, basics, updateField, updateStringArray, addSection, removeSection } = useClientResumeStore(useCallback((state: any) => ({
+  const { skills } = useClientResumeStore(useShallow((state: any) => ({
     skills: state.resume.skills,
-    basics: state.resume.basics,
-    updateField: state.updateField,
-    updateStringArray: state.updateStringArray,
-    addSection: state.addSection,
-    removeSection: state.removeSection
-  }), []), shallow);
+  })));
+  const { updateField, updateStringArray, addSection, removeSection } = useResumeActions();
+  const { config } = useDynamicForm();
+
+  const sectionConfig = config.sections.skills;
+  const fields = sectionConfig?.fields;
 
   const handleSuggestSkills = (index: number) => {
     const category = skills[index].name || "Tech";
@@ -35,7 +26,7 @@ export function SkillsForm() {
 
   return (
     <section className="space-y-6 animate-in fade-in duration-500">
-      {(skills || []).map((skill, i) => (
+      {(skills || []).map((skill: any, i: number) => (
         <div key={i} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4 relative">
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-2">
@@ -48,20 +39,70 @@ export function SkillsForm() {
               </button>
             )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <InputGroup label="Category Name" value={skill.name} onChange={(e: any) => updateField(`skills.${i}.name`, e.target.value)} placeholder="e.g. Frontend" helpText="Group related skills" />
-            <InputGroup label="Proficiency" value={skill.level} onChange={(e: any) => updateField(`skills.${i}.level`, e.target.value)} placeholder="e.g. Expert" />
-          </div>
-          <div className="space-y-2">
-            <InputGroup label="Keywords (Comma separated)" value={skill.keywords?.join(', ')} onChange={(e: any) => updateStringArray(`skills.${i}.keywords`, e.target.value)} placeholder="React, TypeScript, Tailwind..." helpText="Press comma to separate" />
-            <button 
-              onClick={() => handleSuggestSkills(i)}
-              className="flex items-center gap-1 text-[10px] text-purple-600 font-bold hover:text-purple-700 transition-colors bg-purple-50 px-2 py-1 rounded"
-            >
-              <Sparkles className="w-3 h-3" />
-              Suggest Skills
-            </button>
-          </div>
+
+          {fields ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {Object.entries(fields).map(([key, fieldConfig]) => {
+                  if (key === 'keywords') return null; // Handle keywords separately for AI suggestions
+                  return (
+                    <ConfigurableField
+                      key={key}
+                      config={fieldConfig}
+                      value={skill[key as keyof typeof skill]}
+                      onChange={(val) => updateField(`skills.${i}.${key}`, val)}
+                    />
+                  );
+                })}
+              </div>
+              
+              {fields.keywords && (
+                <div className="space-y-2">
+                  <ConfigurableField
+                    config={fields.keywords}
+                    value={skill.keywords?.join(', ')}
+                    onChange={(val) => updateStringArray(`skills.${i}.keywords`, val)}
+                  />
+                  <button 
+                    onClick={() => handleSuggestSkills(i)}
+                    className="flex items-center gap-1 text-[10px] text-purple-600 font-bold hover:text-purple-700 transition-colors bg-purple-50 px-2 py-1 rounded"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    Suggest Skills
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <ConfigurableField
+                  config={{ key: "name", label: "Category Name", type: "text" }}
+                  value={skill.name}
+                  onChange={(val) => updateField(`skills.${i}.name`, val)}
+                />
+                <ConfigurableField
+                  config={{ key: "level", label: "Proficiency", type: "text" }}
+                  value={skill.level}
+                  onChange={(val) => updateField(`skills.${i}.level`, val)}
+                />
+              </div>
+              <div className="space-y-2">
+                <ConfigurableField
+                  config={{ key: "keywords", label: "Keywords (Comma separated)", type: "text" }}
+                  value={skill.keywords?.join(', ')}
+                  onChange={(val) => updateStringArray(`skills.${i}.keywords`, val)}
+                />
+                <button 
+                  onClick={() => handleSuggestSkills(i)}
+                  className="flex items-center gap-1 text-[10px] text-purple-600 font-bold hover:text-purple-700 transition-colors bg-purple-50 px-2 py-1 rounded"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  Suggest Skills
+                </button>
+              </div>
+            </>
+          )}
         </div>
       ))}
       <button onClick={() => addSection("skills", { name: "", level: "", keywords: [] })} className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-4 py-2 rounded-lg transition-colors">

@@ -42,7 +42,7 @@ export function ResumePreviewSkeleton() {
           <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
           <div className="flex flex-col items-center text-center">
             <span className="text-sm font-semibold text-gray-900">Preparing Preview</span>
-            <span className="text-xs text-gray-500">Fetching template and assets...</span>
+            <span className="text-xs text-gray-500">Generating your resume...</span>
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/Button';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export const HeroSection = () => {
   return (
@@ -16,8 +17,12 @@ export const HeroSection = () => {
               Start fresh or bring in your existing resume.
             </p>
             <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-              <Button size="lg" className="w-full sm:w-auto">Create New Resume</Button>
-              <Button size="lg" variant="secondary" className="w-full sm:w-auto">Import Resume</Button>
+              <Button size="lg" className="w-full sm:w-auto" asChild>
+                <Link href="/builder">Create New Resume</Link>
+              </Button>
+              <Button size="lg" variant="secondary" className="w-full sm:w-auto" asChild>
+                <Link href="/builder?import=true">Import Resume</Link>
+              </Button>
             </div>
           </div>
           

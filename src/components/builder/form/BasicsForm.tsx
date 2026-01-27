@@ -1,240 +1,249 @@
 "use client";
 import { useClientResumeStore } from "@/hooks/useClientResumeStore";
-import { shallow } from "zustand/shallow";
-import { useCallback } from "react";
-import { z } from "zod";
-import { getSummarySuggestions, fixGrammar } from "@/lib/ai-service";
-import { Sparkles } from "lucide-react";
+import { useShallow } from 'zustand/react/shallow';
+import { fixGrammar } from "@/lib/ai-service";
+import { InputGroup, TextAreaGroup, DynamicFields, ConfigurableField } from "./FormShared";
+import { useDynamicForm } from "@/hooks/useDynamicForm";
+import { Trash2 } from "lucide-react";
 
-interface Props {
-  selectedTemplate: string;
-}
-
-// Validation Schema
-const basicsSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(5, "Phone number is too short"),
-});
-
-const InputGroup = ({ 
-  label, 
-  value, 
-  placeholder, 
-  onChange, 
-  className = "",
-  helpText,
-  error
-}: { 
-  label: string; 
-  value: string; 
-  placeholder?: string; 
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; 
-  className?: string;
-  helpText?: string;
-  error?: string;
-}) => (
-  <div className={`space-y-1.5 ${className}`}>
-    <div className="flex justify-between items-center">
-      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-        {label}
-      </label>
-      {helpText && (
-        <span className="text-[10px] text-gray-400 font-medium italic">{helpText}</span>
-      )}
-    </div>
-    <input
-      type="text"
-      value={value || ""}
-      onChange={onChange}
-      placeholder={placeholder}
-      className={`flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm placeholder:text-gray-400 
-                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
-                 disabled:cursor-not-allowed disabled:opacity-50 transition-all shadow-sm
-                 ${error ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200'}`}
-    />
-    {error && <p className="text-[10px] text-red-500 font-medium mt-1">{error}</p>}
-  </div>
-);
-
-const TextAreaGroup = ({ 
-  label, 
-  value, 
-  placeholder, 
-  onChange, 
-  className = "",
-  helpText,
-  onFixGrammar
-}: { 
-  label: string; 
-  value: string; 
-  placeholder?: string; 
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void; 
-  className?: string;
-  helpText?: string;
-  onFixGrammar?: () => void;
-}) => (
-  <div className={`space-y-1.5 ${className}`}>
-    <div className="flex justify-between items-center">
-      <div className="flex items-center gap-2">
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          {label}
-        </label>
-        {onFixGrammar && (
-          <button 
-            onClick={onFixGrammar}
-            className="text-[10px] text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1 bg-blue-50 px-1.5 py-0.5 rounded transition-colors"
-            title="AI Grammar Fix"
-          >
-            <Sparkles className="w-2.5 h-2.5" />
-            Fix Grammar
-          </button>
-        )}
-      </div>
-      {helpText && (
-        <span className="text-[10px] text-gray-400 font-medium italic">{helpText}</span>
-      )}
-    </div>
-    <textarea
-      value={value || ""}
-      onChange={onChange}
-      placeholder={placeholder}
-      className="flex min-h-[120px] w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm placeholder:text-gray-400 
-                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
-                 disabled:cursor-not-allowed disabled:opacity-50 resize-y shadow-sm"
-    />
-  </div>
-);
-
-export function BasicsForm({ selectedTemplate }: Props) {
-  const { basics, updateField } = useClientResumeStore(useCallback((state: any) => ({
+export function BasicsForm() {
+  const { basics, updateField, validationErrors } = useClientResumeStore(useShallow((state: any) => ({
     basics: state.resume.basics,
-    updateField: state.updateField
-  }), []), shallow);
+    updateField: state.updateField,
+    validationErrors: state.validationErrors
+  })));
 
+  const { config } = useDynamicForm();
+  const sectionConfig = config.sections.basics;
+  const fields = sectionConfig.fields;
+
+  // If fields are explicitly defined in the template, render them dynamically
+  if (fields) {
+    return (
+      <section className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Object.entries(fields).map(([key, fieldConfig]) => {
+            // Determine if the field is in basics or basics.location
+            const isLocationField = ['address', 'city', 'region', 'postalCode', 'countryCode'].includes(key);
+            const value = isLocationField 
+              ? (basics.location?.[key] || '') 
+              : (basics[key as keyof typeof basics] || '');
+            
+            const updatePath = isLocationField ? `basics.location.${key}` : `basics.${key}`;
+
+            return (
+              <div key={key} className={fieldConfig.type === 'textarea' || key === 'address' ? 'md:col-span-2' : ''}>
+                <ConfigurableField
+                  config={fieldConfig}
+                  value={value}
+                  onChange={(val) => updateField(updatePath as any, val)}
+                  onFixGrammar={key === 'summary' ? () => {
+                    const fixed = fixGrammar(basics.summary);
+                    updateField("basics.summary", fixed);
+                  } : undefined}
+                  error={validationErrors?.[updatePath]}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    );
+  }
+
+  // Fallback to default layout if no fields defined
   return (
     <section className="space-y-6 animate-in fade-in duration-500">
-      
       {/* Photo & Name Group */}
-      <div className="grid grid-cols-1 gap-4">
-        <InputGroup
-          label="Full Name"
-          value={basics.name}
-          onChange={(e) => updateField("basics.name", e.target.value)}
-          placeholder="e.g. John Doe"
-          helpText="As it appears on your ID"
-        />
-        
-        <InputGroup
-          label="Job Title"
-          value={basics.label}
-          onChange={(e) => updateField("basics.label", e.target.value)}
-          placeholder="e.g. Senior Frontend Developer"
-          helpText="Your current or desired role"
-        />
+      <div className="flex flex-col sm:flex-row gap-6 items-start">
+        <div className="w-full sm:w-32 space-y-2">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Photo URL</label>
+          <div className="aspect-square rounded-xl bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden group relative">
+            {basics.image ? (
+              <img src={basics.image} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <div className="text-[10px] text-gray-400 text-center px-2">No Image</div>
+            )}
+          </div>
+          <input 
+            type="text" 
+            value={basics.image || ""} 
+            onChange={(e) => updateField("basics.image", e.target.value)}
+            placeholder="https://..."
+            className="w-full text-[10px] p-1 border border-gray-200 rounded mt-1 focus:ring-1 focus:ring-blue-500 outline-none"
+          />
+        </div>
+
+        <div className="flex-1 grid grid-cols-1 gap-4 w-full">
+          <InputGroup
+            label="Full Name"
+            value={basics.name}
+            onChange={(e) => updateField("basics.name", e.target.value)}
+            placeholder="e.g. John Doe"
+            helpText="As it appears on your ID"
+            error={validationErrors?.["basics.name"]}
+          />
+          
+          <InputGroup
+            label="Job Title"
+            value={basics.label}
+            onChange={(e) => updateField("basics.label", e.target.value)}
+            placeholder="e.g. Senior Frontend Developer"
+            helpText="Your current or desired role"
+            error={validationErrors?.["basics.label"]}
+          />
+        </div>
       </div>
 
       {/* Contact Info */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-4">
-          <InputGroup
-            label="Email"
-            value={basics.email}
-            onChange={(e) => updateField("basics.email", e.target.value)}
-            placeholder="john@example.com"
-            helpText="Professional email preferred"
-          />
-        </div>
-        <div className="space-y-4">
-          <InputGroup
-            label="Phone"
-            value={basics.phone}
-            onChange={(e) => updateField("basics.phone", e.target.value)}
-            placeholder="+1 234 567 890"
-            helpText="Include country code"
-          />
-        </div>
+        <InputGroup
+          label="Email"
+          value={basics.email}
+          onChange={(e) => updateField("basics.email", e.target.value)}
+          placeholder="john@example.com"
+          helpText="Professional email preferred"
+        />
+        <InputGroup
+          label="Phone"
+          value={basics.phone}
+          onChange={(e) => updateField("basics.phone", e.target.value)}
+          placeholder="+1 234 567 890"
+          helpText="Include country code"
+        />
       </div>
 
-      <InputGroup
-        label="Website / LinkedIn"
-        value={basics.url}
-        onChange={(e) => updateField("basics.url", e.target.value)}
-        placeholder="https://linkedin.com/in/johndoe"
-        helpText="Portfolio or LinkedIn profile"
-      />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <InputGroup
+          label="Website"
+          value={basics.url}
+          onChange={(e) => updateField("basics.url", e.target.value)}
+          placeholder="https://johndoe.com"
+          helpText="Your personal website or portfolio"
+        />
+        <InputGroup
+          label="Nationality"
+          value={basics.nationality || ""}
+          onChange={(e) => updateField("basics.nationality", e.target.value)}
+          placeholder="e.g. American"
+        />
+      </div>
 
-      {/* Location - Grouped logically */}
-      <div className="space-y-4 pt-2 border-t border-gray-100">
-        <h3 className="text-sm font-medium text-gray-900">Location</h3>
+      {/* Social Profiles */}
+      <div className="space-y-4">
+        <div className="flex justify-between items-center border-b border-gray-100 pb-1">
+          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Social Profiles</h4>
+          <button
+            onClick={() => {
+              const newProfiles = [...(basics.profiles || []), { network: "", username: "", url: "" }];
+              updateField("basics.profiles", newProfiles);
+            }}
+            className="text-[10px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-wider"
+          >
+            + Add Profile
+          </button>
+        </div>
         
-        {selectedTemplate === 'traditional' && (
-          <InputGroup
-            label="Address"
-            value={basics.location?.address || ''}
-            onChange={(e) => updateField("basics.location.address", e.target.value)}
-            placeholder="123 Main St, Apt 4B"
-          />
-        )}
+        {(basics.profiles || []).map((profile: any, idx: number) => (
+          <div key={idx} className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-lg bg-gray-50/50 border border-gray-100 relative group">
+            <InputGroup
+              label="Network"
+              value={profile.network}
+              onChange={(e) => {
+                const newProfiles = [...basics.profiles];
+                newProfiles[idx] = { ...newProfiles[idx], network: e.target.value };
+                updateField("basics.profiles", newProfiles);
+              }}
+              placeholder="e.g. LinkedIn"
+            />
+            <InputGroup
+              label="Username"
+              value={profile.username}
+              onChange={(e) => {
+                const newProfiles = [...basics.profiles];
+                newProfiles[idx] = { ...newProfiles[idx], username: e.target.value };
+                updateField("basics.profiles", newProfiles);
+              }}
+              placeholder="johndoe"
+            />
+            <div className="relative">
+              <InputGroup
+                label="URL"
+                value={profile.url}
+                onChange={(e) => {
+                  const newProfiles = [...basics.profiles];
+                  newProfiles[idx] = { ...newProfiles[idx], url: e.target.value };
+                  updateField("basics.profiles", newProfiles);
+                }}
+                placeholder="https://..."
+              />
+              <button
+                onClick={() => {
+                  const newProfiles = basics.profiles.filter((_: any, i: number) => i !== idx);
+                  updateField("basics.profiles", newProfiles);
+                }}
+                className="absolute -top-1 -right-1 p-1 bg-white rounded-full shadow-sm border border-gray-100 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
 
-        <div className="grid grid-cols-2 gap-4">
+      {/* Location */}
+      <div className="space-y-4">
+        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-1">Location</h4>
+        <InputGroup
+          label="Address"
+          value={basics.location?.address || ""}
+          onChange={(e) => updateField("basics.location.address", e.target.value)}
+          placeholder="123 Main St"
+        />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <InputGroup
             label="City"
-            value={basics.location.city}
+            value={basics.location?.city || ""}
             onChange={(e) => updateField("basics.location.city", e.target.value)}
             placeholder="New York"
           />
           <InputGroup
-            label="Region / State"
-            value={basics.location.region}
+            label="Region"
+            value={basics.location?.region || ""}
             onChange={(e) => updateField("basics.location.region", e.target.value)}
             placeholder="NY"
           />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          {selectedTemplate === 'traditional' && (
-            <InputGroup
-              label="Postal Code"
-              value={basics.location?.postalCode || ''}
-              onChange={(e) => updateField("basics.location.postalCode", e.target.value)}
-              placeholder="10001"
-            />
-          )}
           <InputGroup
-            label="Country"
-            value={basics.location.countryCode}
+            label="Postal Code"
+            value={basics.location?.postalCode || ""}
+            onChange={(e) => updateField("basics.location.postalCode", e.target.value)}
+            placeholder="10001"
+          />
+          <InputGroup
+            label="Country Code"
+            value={basics.location?.countryCode || ""}
             onChange={(e) => updateField("basics.location.countryCode", e.target.value)}
-            placeholder="United States"
+            placeholder="US"
           />
         </div>
-        
-        {selectedTemplate === 'traditional' && (
-          <InputGroup
-            label="Nationality"
-            value={basics.nationality || ''}
-            onChange={(e) => updateField("basics.nationality", e.target.value)}
-            placeholder="American"
-            helpText="Optional"
-          />
-        )}
       </div>
 
-      {/* Summary Area */}
-      <div className="pt-2 border-t border-gray-100">
-        <TextAreaGroup
-          label="Profile Summary"
-          value={basics.summary}
-          onChange={(e) => updateField("basics.summary", e.target.value)}
-          placeholder="Briefly describe your professional background..."
-          helpText="3-5 sentences recommended"
-          onFixGrammar={() => {
-            const fixed = fixGrammar(basics.summary);
-            updateField("basics.summary", fixed);
-          }}
-        />
-        <p className="text-[10px] text-gray-400 mt-1">Markdown supported</p>
-      </div>
+      <TextAreaGroup
+        label="Professional Summary"
+        value={basics.summary}
+        onChange={(e) => updateField("basics.summary", e.target.value)}
+        placeholder="Briefly describe your background and key strengths..."
+        onFixGrammar={() => {
+          const fixed = fixGrammar(basics.summary);
+          updateField("basics.summary", fixed);
+        }}
+      />
+
+      <DynamicFields 
+        config={sectionConfig.customFields}
+        data={basics}
+        onUpdate={(key, value) => updateField(`basics.${key}` as any, value)}
+      />
     </section>
-  )
+  );
 }

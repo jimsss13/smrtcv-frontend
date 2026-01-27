@@ -12,7 +12,9 @@ export function useBuilderScaling(containerRef: RefObject<HTMLDivElement | null>
       if (!containerRef.current) return;
       
       const containerWidth = containerRef.current.clientWidth;
-      const padding = 48; // Padding around the preview
+      // Match the padding in BuilderPreview.tsx (p-4 = 16px, p-6 = 24px)
+      // We use the larger value (24px * 2 = 48px) for scaling safety
+      const padding = 48; 
       const availableWidth = containerWidth - padding;
       
       // Standard A4 width in pixels at 96 DPI

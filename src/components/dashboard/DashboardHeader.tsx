@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { User } from 'lucide-react';
 
 interface DashboardHeaderProps {
@@ -17,16 +16,13 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ userName }) =>
   return (
     <header className="border-b border-border bg-white sticky top-0 z-40">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 max-w-7xl">
-        <Link href="/dashboard" className="flex items-center group transition-opacity hover:opacity-80">
-          <Image
-            src="/logo.png" 
-            alt="Smart CV Logo"
-            width={120} 
-            height={30} 
-            className="h-10 w-auto" 
-            priority
-            suppressHydrationWarning
-          />
+        <Link href="/dashboard" className="flex items-center gap-2 group">
+          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform duration-200">
+            <span className="text-xl font-black tracking-tighter">S</span>
+          </div>
+          <span className="text-xl font-black text-gray-900 tracking-tight group-hover:text-blue-600 transition-colors">
+            smrt<span className="text-blue-600 group-hover:text-gray-900">cv</span>
+          </span>
         </Link>
 
         <nav className="flex items-center gap-4 sm:gap-8">

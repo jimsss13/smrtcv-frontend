@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { persist } from 'zustand/middleware';
 import { Resume } from '@/types/resume';
-import { Template } from '@/types/template'; // Import Template type
+import { Template } from '@/types/template';
+import { validateField } from '@/lib/validation';
 
 // --- 1. Type Safety Utilities ---
 type RecursiveKeyOf<TObj extends object> = {
@@ -27,7 +28,7 @@ type PathValue<T, P extends string> = P extends `${infer Key}.${infer Rest}`
 
 // --- 2. Blank "Template" Objects ---
 const blankWorkEntry = {
-  name: "", position: "", url: "", startDate: "", endDate: "", summary: "", highlights: []
+  name: "", position: "", url: "", startDate: "", endDate: "", summary: "", location: "", highlights: []
 };
 const blankEducationEntry = {
   institution: "", url: "", area: "", studyType: "", startDate: "", endDate: "", score: "", location: ""
@@ -41,7 +42,7 @@ const blankInterestEntry = { name: "", keywords: [] };
 const blankProjectEntry = { name: "", startDate: "", endDate: "", description: "", highlights: [], url: "" };
 const blankReferenceEntry = { name: "", reference: "" };
 const blankVolunteerEntry = { organization: "", position: "", url: "", startDate: "", endDate: "", summary: "", highlights: [] };
-const blankAdvisoryEntry = { organization: "", position: "" };
+const blankAdvisoryEntry = { organization: "", position: "", startDate: "", endDate: "", summary: "" };
 
 const blankResume: Resume = {
   basics: {
@@ -64,7 +65,7 @@ const blankResume: Resume = {
   advisory: [blankAdvisoryEntry],
 };
 
-const LOCAL_STORAGE_KEY = 'dynamicResumeData';
+const LOCAL_STORAGE_KEY = 'smrtcv_resume_data_v1';
 
 const defaultSectionOrder: (keyof Resume)[] = [
   'basics',
@@ -82,7 +83,7 @@ const defaultSectionOrder: (keyof Resume)[] = [
   'advisory'
 ];
 
-const blankEntryMap: Record<keyof Resume, any> = {
+const blankEntryMap: Record<keyof Resume, unknown> = {
   basics: {},
   work: blankWorkEntry,
   education: blankEducationEntry,
@@ -114,68 +115,265 @@ export interface ResumeVersion {
   resume: Resume;
 }
 
-interface ResumeState {
+export interface FieldConfig {
+  key: string;
+  label?: string;
+  placeholder?: string;
+  helpText?: string;
+  type: 'text' | 'textarea' | 'date' | 'select' | 'multiselect';
+  required?: boolean;
+  options?: string[]; // For select/multiselect
+  hidden?: boolean;
+}
+
+export interface SectionConfig {
+  title: string;
+  visible: boolean;
+  order: number;
+  fields?: Record<string, FieldConfig>;
+  customFields?: Record<string, FieldConfig>;
+}
+
+export interface FormConfig {
+  sections: Record<keyof Resume, SectionConfig>;
+  version: string;
+  updatedAt: number;
+  history?: { version: string; updatedAt: number; config: FormConfig }[];
+}
+
+export interface ResumeState {
+  resumeId: string | null;
+  resumeTitle: string;
   resume: Resume;
   sectionOrder: (keyof Resume)[];
-  templates: Template[];
-  selectedTemplate: string;
   exportSettings: ExportSettings;
-  versions: ResumeVersion[]; // New
+  versions: ResumeVersion[]; 
+  validationErrors?: Record<string, string>;
+  templates: Template[];
+  selectedTemplate: string | null;
+  formConfig: FormConfig; // New: Dynamic Form Config
+  importAnalysis: {
+    fileName: string;
+    imports: unknown[];
+    rawContent: string;
+  } | null;
+  
+  // History
+  past: Resume[];
+  future: Resume[];
 
+  setResumeId: (id: string | null) => void;
+  setResumeTitle: (title: string) => void;
+  setResume: (resume: Resume) => void;
+  undo: () => void;
+  redo: () => void;
   updateField: <P extends RecursiveKeyOf<Resume>>(
     path: P,
     value: PathValue<Resume, P>
   ) => void;
 
-  addSection: (section: keyof Resume, template: any) => void;
+  addSection: (section: keyof Resume, template: unknown) => void;
   removeSection: (section: keyof Resume, index: number) => void;
   updateStringArray: (path: RecursiveKeyOf<Resume>, value: string) => void;
   reorderSections: (newOrder: (keyof Resume)[]) => void;
+  toggleSectionVisibility: (section: keyof Resume, visible: boolean) => void;
+  updateExportSettings: (settings: Partial<ExportSettings>) => void;
+  saveVersion: (name: string) => void; 
+  restoreVersion: (id: string) => void; 
+  deleteVersion: (id: string) => void; 
+  setValidationError: (path: string, error: string | null) => void;
   setTemplates: (templates: Template[]) => void;
   setSelectedTemplate: (templateId: string) => void;
-  updateExportSettings: (settings: Partial<ExportSettings>) => void;
-  saveVersion: (name: string) => void; // New
-  restoreVersion: (id: string) => void; // New
-  deleteVersion: (id: string) => void; // New
+  updateFormConfig: (config: Partial<FormConfig>) => void; // New
+  getSectionValidation: (section: keyof Resume) => { requiredFields: string[] };
+  setImportAnalysis: (analysis: { fileName: string; imports: any[]; rawContent: string } | null) => void;
 }
+
+const initialFormConfig: FormConfig = {
+  sections: {
+    basics: { title: "Contact Information", visible: true, order: 0 },
+    work: { title: "Work Experience", visible: true, order: 1 },
+    education: { title: "Education", visible: true, order: 2 },
+    skills: { title: "Skills", visible: true, order: 3 },
+    projects: { title: "Projects", visible: true, order: 4 },
+    awards: { title: "Awards & Honors", visible: true, order: 5 },
+    certificates: { title: "Certifications", visible: true, order: 6 },
+    publications: { title: "Publications", visible: true, order: 7 },
+    languages: { title: "Languages", visible: true, order: 8 },
+    interests: { title: "Interests", visible: true, order: 9 },
+    volunteer: { title: "Volunteer Experience", visible: true, order: 10 },
+    references: { title: "References", visible: true, order: 11 },
+    advisory: { title: "Advisory Roles", visible: true, order: 12 },
+  },
+  version: "1.0.0",
+  updatedAt: Date.now(),
+};
 
 export const useResumeStore = create(
   persist(
-    immer<ResumeState>((set) => ({
+    immer<ResumeState>((set, get) => ({
+      resumeId: null,
+      resumeTitle: "Untitled Resume",
       resume: blankResume,
       sectionOrder: defaultSectionOrder,
-      templates: [],
-      selectedTemplate: 'classic',
       exportSettings: {
         pageSize: 'A4',
         margins: 'normal',
         fontSize: 'medium',
         primaryColor: '#2563eb',
       },
-      versions: [], // Initialize
+      versions: [], 
+      validationErrors: {},
+      templates: [],
+      selectedTemplate: null,
+      formConfig: initialFormConfig,
+      importAnalysis: null,
+      past: [],
+      future: [],
+
+      setResumeId: (id) => {
+        set((state) => {
+          state.resumeId = id;
+        });
+      },
+      setResumeTitle: (title) => {
+        set((state) => {
+          state.resumeTitle = title;
+        });
+      },
+      setResume: (resume) => {
+        set((state) => {
+          state.resume = resume;
+        });
+      },
+
+      undo: () => {
+        set((state) => {
+          if (state.past.length === 0) return;
+          const previous = state.past.pop();
+          if (previous) {
+            state.future.push(JSON.parse(JSON.stringify(state.resume)));
+            state.resume = previous;
+          }
+        });
+      },
+
+      redo: () => {
+        set((state) => {
+          if (state.future.length === 0) return;
+          const next = state.future.pop();
+          if (next) {
+            state.past.push(JSON.parse(JSON.stringify(state.resume)));
+            state.resume = next;
+          }
+        });
+      },
+
+      setImportAnalysis: (analysis) => {
+        set((state) => {
+          state.importAnalysis = analysis;
+        });
+      },
+
+      getSectionValidation: (section: keyof Resume) => {
+        const config = get().formConfig.sections[section];
+        if (!config?.fields) return { requiredFields: [] };
+        
+        const requiredFields = Object.entries(config.fields)
+          .filter(([_, field]) => field.required)
+          .map(([key]) => key);
+          
+        return { requiredFields };
+      },
+
+      updateFormConfig: (config) => {
+        set((state) => {
+          // Store current config in history before updating
+          if (!state.formConfig.history) state.formConfig.history = [];
+          
+          const currentConfigSnapshot = {
+            version: state.formConfig.version,
+            updatedAt: state.formConfig.updatedAt,
+            sections: JSON.parse(JSON.stringify(state.formConfig.sections))
+          };
+
+          if (config.sections) {
+            state.formConfig.sections = { ...state.formConfig.sections, ...config.sections };
+          }
+          
+          if (config.version) {
+            state.formConfig.version = config.version;
+          } else {
+            // Auto-increment version if not provided (simple logic)
+            const parts = state.formConfig.version.split('.');
+            if (parts.length === 3) {
+              parts[2] = (parseInt(parts[2]) + 1).toString();
+              state.formConfig.version = parts.join('.');
+            }
+          }
+
+          state.formConfig.updatedAt = Date.now();
+          
+          // Keep only last 10 versions in history
+          state.formConfig.history.push(currentConfigSnapshot);
+          if (state.formConfig.history.length > 10) {
+            state.formConfig.history.shift();
+          }
+        });
+      },
+
+      setTemplates: (templates) => {
+        set((state) => {
+          state.templates = templates;
+        });
+      },
+
+      setSelectedTemplate: (templateId) => {
+        set((state) => {
+          state.selectedTemplate = templateId;
+        });
+      },
 
       updateField: (path, value) => {
         set((state) => {
+          // History
+          state.past.push(JSON.parse(JSON.stringify(state.resume)));
+          if (state.past.length > 50) state.past.shift();
+          state.future = [];
+
           const keys = path.split(".");
-          let current = state.resume as any;
+          let current: Record<string, unknown> = state.resume as unknown as Record<string, unknown>;
           for (let i = 0; i < keys.length - 1; i++) {
             const key = keys[i];
             if (current[key] === undefined || current[key] === null) {
               current[key] = isNaN(Number(keys[i + 1])) ? {} : [];
             }
-            current = current[key];
+            current = current[key] as Record<string, unknown>;
           }
           current[keys[keys.length - 1]] = value;
+
+          // Validation
+          const error = validateField(path, value);
+          if (!state.validationErrors) state.validationErrors = {};
+          if (error) {
+            state.validationErrors[path] = error;
+          } else {
+            delete state.validationErrors[path];
+          }
         });
       },
 
       addSection: (section, template) => {
         set((state) => {
-          const sectionArray = state.resume[section] as any[] | undefined;
+          state.past.push(JSON.parse(JSON.stringify(state.resume)));
+          if (state.past.length > 50) state.past.shift();
+          state.future = [];
+
+          const sectionArray = state.resume[section] as unknown[] | undefined;
           if (Array.isArray(sectionArray)) {
-            sectionArray.push(template);
+            (sectionArray as unknown[]).push(template);
           } else {
-            (state.resume[section] as any) = [template];
+            (state.resume[section] as unknown) = [template];
           }
         });
       },
@@ -183,7 +381,11 @@ export const useResumeStore = create(
       // --- NEW: Remove Implementation ---
       removeSection: (section, index) => {
         set((state) => {
-          const sectionArray = state.resume[section] as any[] | undefined;
+          state.past.push(JSON.parse(JSON.stringify(state.resume)));
+          if (state.past.length > 50) state.past.shift();
+          state.future = [];
+
+          const sectionArray = state.resume[section] as unknown[] | undefined;
           if (Array.isArray(sectionArray)) {
             sectionArray.splice(index, 1);
           }
@@ -193,6 +395,10 @@ export const useResumeStore = create(
       updateStringArray: (path, value) => {
         const arr = value.split(',').map(s => s.trim()).filter(Boolean);
         set((state) => {
+          state.past.push(JSON.parse(JSON.stringify(state.resume)));
+          if (state.past.length > 50) state.past.shift();
+          state.future = [];
+
           const keys = path.split(".");
           let current = state.resume as any;
           for (let i = 0; i < keys.length - 1; i++) {
@@ -205,18 +411,22 @@ export const useResumeStore = create(
       reorderSections: (newOrder) => {
         set((state) => {
           state.sectionOrder = newOrder;
+          // Sync with formConfig
+          newOrder.forEach((key, index) => {
+            if (state.formConfig.sections[key]) {
+              state.formConfig.sections[key].order = index;
+            }
+          });
+          state.formConfig.updatedAt = Date.now();
         });
       },
 
-      setTemplates: (templates) => { // Implement setTemplates action
+      toggleSectionVisibility: (section, visible) => {
         set((state) => {
-          state.templates = templates;
-        });
-      },
-
-      setSelectedTemplate: (templateId) => { // New: Implement setSelectedTemplate action
-        set((state) => {
-          state.selectedTemplate = templateId;
+          if (state.formConfig.sections[section]) {
+            state.formConfig.sections[section].visible = visible;
+            state.formConfig.updatedAt = Date.now();
+          }
         });
       },
 
@@ -251,18 +461,37 @@ export const useResumeStore = create(
           state.versions = state.versions.filter((v) => v.id !== id);
         });
       },
+
+      setValidationError: (path, error) => {
+        set((state) => {
+          if (!state.validationErrors) state.validationErrors = {};
+          if (error) {
+            state.validationErrors[path] = error;
+          } else {
+            delete state.validationErrors[path];
+          }
+        });
+      },
     })),
     {
       name: LOCAL_STORAGE_KEY,
+      // Exclude templates from persistence so they are always fetched fresh from Azure
+      partialize: (state) => {
+        const { templates, ...rest } = state;
+        return rest;
+      },
       merge: (persistedState, currentState) => {
+        const pState = persistedState as ResumeState;
         const mergedState = {
           ...currentState,
-          ...(persistedState as ResumeState),
+          ...pState,
+          // Explicitly ensure templates are NOT restored from local storage
+          templates: currentState.templates,
           resume: {
             ...currentState.resume,
-            ...((persistedState as ResumeState)?.resume || {}),
+            ...(pState?.resume || {}),
           },
-          sectionOrder: (persistedState as ResumeState)?.sectionOrder || currentState.sectionOrder,
+          sectionOrder: pState?.sectionOrder || currentState.sectionOrder,
         };
 
         const mergedResume = mergedState.resume;

@@ -1,8 +1,7 @@
 "use client";
 import { PlusCircle, Trash2, Sparkles } from "lucide-react";
 import { useClientResumeStore } from "@/hooks/useClientResumeStore";
-import { shallow } from "zustand/shallow";
-import { useCallback } from "react";
+import { useShallow } from 'zustand/react/shallow';
 import { fixGrammar } from "@/lib/ai-service";
 
 const InputGroup = ({ label, value, placeholder, onChange }: any) => (
@@ -34,16 +33,16 @@ const TextAreaGroup = ({ label, value, placeholder, onChange, onFixGrammar }: an
 );
 
 export function ReferencesForm() {
-  const { references, updateField, addSection, removeSection } = useClientResumeStore(useCallback((state: any) => ({
+  const { references, updateField, addSection, removeSection } = useClientResumeStore(useShallow((state: any) => ({
     references: state.resume.references,
     updateField: state.updateField,
     addSection: state.addSection,
     removeSection: state.removeSection
-  }), []), shallow);
+  })));
 
   return (
     <section className="space-y-6 animate-in fade-in duration-500">
-      {(references || []).map((ref, i) => (
+      {(references || []).map((ref: any, i: number) => (
         <div key={i} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-sm font-bold text-gray-800">Reference #{i + 1}</h3>

@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, FileText, Palette } from 'lucide-react';
+import { LayoutDashboard, FileText, LayoutTemplate } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -16,7 +16,7 @@ export const DashboardNav: React.FC = () => {
   const navItems = [
     { label: 'My Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'My Resumes', href: '/resumes', icon: FileText },
-    { label: 'Templates', href: '/templates', icon: Palette },
+    { label: 'Templates', href: '/templates', icon: LayoutTemplate },
   ];
 
   return (

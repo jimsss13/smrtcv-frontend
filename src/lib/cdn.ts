@@ -14,11 +14,3 @@ export function getCdnUrl(path: string): string {
 
   return `${CDN_BASE}/${cleanPath}`;
 }
-
-export function getTemplateImageUrl(filename: string): string {
-  return getCdnUrl(`templates/${filename}`);
-}
-
-export function getTemplateDataUrl(): string {
-  return getCdnUrl('templates/templates.json');
-}
